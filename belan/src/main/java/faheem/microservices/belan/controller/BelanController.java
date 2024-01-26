@@ -3,10 +3,7 @@ package faheem.microservices.belan.controller;
 import faheem.microservices.belan.entity.Belan;
 import faheem.microservices.belan.exceptions.BelanNotAddedException;
 import faheem.microservices.belan.exceptions.BelanNotFoundException;
-import faheem.microservices.belan.model.Employee;
 import faheem.microservices.belan.service.BelanService;
-import faheem.microservices.belan.service.EmployeeService;
-import faheem.microservices.belan.wrapper.BelanEmployee;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Slf4j
 @RestController
@@ -22,9 +20,6 @@ public class BelanController {
 
     @Autowired
     private BelanService belanService;
-
-    @Autowired
-    private EmployeeService employeeService;
 
     @PostMapping("/add")
     public ResponseEntity<Object> addBelan(@RequestBody Belan belan){
@@ -57,13 +52,13 @@ public class BelanController {
     @GetMapping("/get/{id}")
     public ResponseEntity<Object> getBelanById(@PathVariable("id") Integer belanId){
         log.info("BelanController.getBelanById() method is called...");
-    
+    try {
         Belan belan = belanService.getBelanById(belanId);
-        if (belan == null) {
-            log.warn("Belan with id {} not found", belanId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Belan with id " + belanId + " not found");
-        }
         return ResponseEntity.ok(belan);
+    }catch (NoSuchElementException e){
+           log.error("No belan found : {}",e.getMessage(),e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @GetMapping("/color/{color}")
@@ -133,23 +128,6 @@ public class BelanController {
             log.error("Error while deleting belan: {}",e.getMessage(),e);
          return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error occured while deleting belan");
         }
-    }
-
-    //you can delete this API from here
-    @GetMapping("/getEmp/{id}")
-    public Employee getEmployeeById(@PathVariable("id") Integer employeeId){
-        return employeeService.getEmployeeById(employeeId);
-    }
-
-    @GetMapping("/belanEmp")
-    public BelanEmployee getBelanWithEmployee(Integer belanId,Integer employeeId){
-        log.info("BelanController.getBelanWithEmployee() method is called...");
-        Belan belan = belanService.getBelanById(belanId);
-        Employee employee = employeeService.getEmployeeById(employeeId);
-        BelanEmployee belanEmployeeWrapper = new BelanEmployee();
-        belanEmployeeWrapper.setBelan(belan);
-        belanEmployeeWrapper.setEmployee(employee);
-        return belanEmployeeWrapper;
     }
 
     private boolean invalidString(String input){
